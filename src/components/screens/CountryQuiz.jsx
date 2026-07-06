@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from "react";
 import { DB } from "../../data/countries";
 import { CAT_KEYS, CATS } from "../../data/categories";
 import { shuffle } from "../../engine/utils";
-import Flag from "../ui/Flag";
 import { REV_POOL, pickRevCats } from "../../engine/reverseMode";
 import { usePersistentState, loadKey, saveKey } from "../../engine/storage";
 
@@ -45,7 +44,7 @@ export default function CountryQuiz({onBack,t}){
       </div>
       <div style={{textAlign:"center",padding:"20px 14px",background:t.sf,borderRadius:12,borderLeft:`4px solid ${t.honey}`,marginBottom:6,boxShadow:t.shd}}>
         <div style={{fontSize:12,color:t.txD,marginBottom:2}}>Which traits apply to</div>
-        <div style={{fontSize:26,fontWeight:800,color:t.tx,letterSpacing:-.3}}><Flag name={co.name} size={24} style={{marginRight:8,verticalAlign:"-3px"}}/>{co.name}</div>
+        <div style={{fontSize:26,fontWeight:800,color:t.tx,letterSpacing:-.3}}>{co.name}</div>
         <div style={{fontSize:11,color:t.txM,marginTop:4}}>{rev?`${trueCount} of 8 are true`:`${trueCount} of these 8 are true`}</div>
       </div>
 

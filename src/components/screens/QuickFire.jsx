@@ -88,7 +88,7 @@ export default function QuickFire({onBack,t}){
         border:viewing?(viewCard.correct?`2px solid ${t.ok}`:`2px solid ${t.pri}`):fb==="correct"?`2px solid ${t.ok}`:fb==="wrong"?`2px solid ${t.pri}`:`1px solid ${t.bd}50`,transition:"border .15s"}}>
         <div style={{fontSize:13,color:t.txD,marginBottom:6}}>{viewing?"Did this apply to":"Does this apply to"}</div>
         <div style={{fontSize:28,fontWeight:800,color:t.tx,letterSpacing:-.3,marginBottom:18}}>
-          <Flag name={displayCard.co.name} size={26} style={{marginRight:8,verticalAlign:"-3px"}}/>{displayCard.co.name}
+          {displayCard.co.name}
         </div>
         <div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 20px",background:t.sf2,borderRadius:12}}>
           <span style={{fontSize:22}}>{displayCat.i}</span>
