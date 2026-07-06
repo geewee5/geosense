@@ -1,0 +1,345 @@
+# CLAUDE.md — GeoSense
+
+This file is the canonical reference for any AI assistant working on this codebase.
+Read it fully before making any changes.
+
+---
+
+## What this project is
+
+GeoSense is a geography learning game. The core loop: players see a 3×3 grid where
+rows and columns are each labelled with a "category" (e.g. "Landlocked", "In Africa",
+"Flag Has Stars"). Each cell is the intersection of a row and column category. Players
+type a country name that satisfies BOTH categories for that cell.
+
+There are three modes:
+1. **Daily Grid** — seeded from today's date, same puzzle for every user worldwide
+2. **Random Puzzle** — unlimited freshly generated grids
+3. **Practice** — two sub-modes:
+   - **Country Quiz**: see a country, pick which of 8 curated traits apply
+   - **Quick Fire**: one country + one trait, answer Yes/No as fast as possible
+
+The project started as a GeoRiddle (georiddle.org) clone but is being built as a
+richer learning tool with spaced repetition, enriched answer reveals, and pedagogically
+designed question selection.
+
+---
+
+## Architecture
+
+This is a **100% client-side React app** (Vite + React 18). There is no backend, no
+API calls, no authentication, no database. Everything runs in the browser.
+
+### Where things live
+
+```
+src/
+├── main.jsx                 Vite entry point
+├── App.jsx                  Root shell: theme, navigation, stats, current grid
+├── index.css                Global resets + font application
+├── data/
+│   ├── countries.js         DB array (193 records) + D() bitflag constructor
+│   ├── categories.js        CATS, CAT_KEYS, CAT_MEMBERS, QF_CATS
+│   └── iso2.js              _i2 ISO2 map + getFlag()
+├── engine/
+│   ├── utils.js             sRng, shuffle, cellCount, cellAnswers
+│   ├── puzzleGen.js         genGrid, makeDailyGrid, makeRandomGrid
+│   └── reverseMode.js       REV_POOL, pickRevCats, enrichAnswer
+├── theme/
+│   └── themes.js            TH (light / dark theme objects)
+└── components/
+    ├── screens/             Home, GridGame, PostGame, PracticeLanding,
+    │                        CountryQuiz, QuickFire, Stats
+    └── ui/                  Picker, CatTag, ThemeToggle
+```
+
+> Note on module boundaries: `CAT_MEMBERS` (precomputed members per category) and
+> `QF_CATS` (Practice-mode category subset) live in `data/categories.js` rather than
+> in the engine files. They are pure derivations of the data, and placing them here
+> keeps the import graph acyclic (`engine` depends on `data`, never the reverse).
+
+### Data model
+
+All country data lives in `src/data/countries.js` as a compact array of 193 objects.
+Each country is created with the `D()` constructor which unpacks bitflag integers:
+
+```
+D(name, continent, gdp_K, timeZones, pop_M, f1, f2, f3, f4)
+```
+
+The four flag integers pack boolean attributes:
+- `f1`: left(1) un(2) locked(4) isle(8) monarchy(16) federal(32) pm(64) eu(128)
+- `f2`: nato(1) g20(2) cwlth(4) brics(8) opec(16) asean(32) soviet(64) conscript(128)
+- `f3`: fl_red(1) fl_blue(2) fl_green(4) fl_stars(8) fl_crescent(16) fl_animal(32) fl_cross(64) fl_text(128)
+- `f4`: olympics(1) fifa(2) f1gp(4) eng(8) fr(16) es(32) ar(64) conflict(128) nuclear(256)
+
+**Never add a dependency** to decode or manage this data. The bitflag approach is
+intentional — it keeps the bundle small and the data portable.
+
+`continent` is an integer: 0=Europe, 1=Asia, 2=Africa, 3=N.America, 4=S.America, 5=Oceania
+
+`gdp` is in thousands of USD (so 13.0 = $13,000 per capita)
+
+### Categories
+
+`src/data/categories.js` exports `CATS` — an object keyed by category ID with shape:
+```js
+{ l: "Display Label", i: "emoji", d: 1|2|3, t: (country) => boolean }
+```
+`d` is difficulty: 1=easy, 2=medium, 3=hard. This affects puzzle generation weighting.
+
+`CAT_KEYS` is `Object.keys(CATS)` — the canonical ordered list of all category IDs.
+
+**Name-based categories** (`startS`, `startC`, `startB`, `startM`) are valid in the
+grid game but are explicitly excluded from Practice modes because the answer is
+trivially visible (you can see the country name on screen). This is enforced in:
+- `pickRevCats()` via `filter(k => !k.startsWith("start"))`
+- `QuickFire` via the `QF_CATS` constant (exported from `data/categories.js`)
+
+### Puzzle generation
+
+`src/engine/puzzleGen.js`
+
+`genGrid(rng)` — takes a random number generator function, tries up to 500 combinations
+of 3 row categories and 3 column categories. A valid grid requires:
+- No category appears in both rows and columns
+- Every cell (intersection) has ≥ 3 valid country answers
+
+`makeDailyGrid()` — uses `sRng(dailySeed())` where `dailySeed()` returns
+`year*10000 + month*100 + day` as an integer. This produces the same grid for all
+users on the same calendar day. Do not change the seed formula.
+
+`makeRandomGrid()` — uses `Math.random()` directly for unrepeatable grids.
+
+`CAT_MEMBERS` is precomputed at module load (in `data/categories.js`): for each
+category, the full list of matching countries. Used by `cellCount()` and
+`cellAnswers()` throughout.
+
+### Practice mode algorithms
+
+`src/engine/reverseMode.js`
+
+`pickRevCats(country)` — builds the 8-card set for Country Quiz:
+- Excludes name-based categories
+- Selects 2 "surprising" true categories (fewest worldwide matches = most surprising)
+- Selects 2 random true categories from the remainder
+- Selects 4 plausible false categories (scored by: difficulty level + how common in same continent)
+- Returns `{ cats, correct, funFact }` where `funFact` is the "Did you know?" string
+
+`enrichAnswer(card)` — returns a human-readable enrichment string for the answer reveal.
+Maps each category type to specific data from the country object:
+- GDP categories → actual GDP figure
+- Population → actual population
+- Landlocked → explains what it actually is (has coastline in X)
+- Flag categories → lists ALL flag attributes of that country (not just the one asked)
+- Geography categories → actual continent name
+
+### Theming
+
+`src/theme/themes.js` exports `TH` with `light` and `dark` keys.
+
+Each theme is a flat object of CSS color strings. Keys follow this naming convention:
+- `bg` — page background
+- `sf` / `sf2` — surface levels (cards, inputs)
+- `tx` / `txM` / `txD` — text (primary, muted, dim)
+- `pri` / `sec` — primary (vermilion) and secondary (slate-teal) accent colors
+- `ok` / `honey` — success green and brass/gold
+- `okBg` / `okBd` — success background and border
+- `noBg` / `noBd` — error background and border
+- `selBg` / `selBd` — selected state background and border
+- `bd` / `bdD` — border and dashed border
+- `tagBg` / `tagTx` — inverted pill/badge colors
+- `shd` — box-shadow string
+
+**Never use Tailwind classes for colors.** All colors come from the theme object `t`
+passed as a prop. This is what enables instant dark/light switching without a page
+reload or CSS variable injection.
+
+### Flag emojis
+
+`src/data/iso2.js` exports `_i2` (ISO2 map) and `getFlag(countryName)` which converts
+to regional indicator emoji pairs using `String.fromCodePoint(0x1F1E6 + char - 65)`.
+
+Flags are shown:
+- Small next to country name on every card
+- Large (48px) after answering a flag-specific question in Quick Fire
+
+---
+
+## Design deviations from the original prototype
+
+The game **logic** is a faithful extraction of the `geosense-v3.jsx` prototype (kept in
+`/docs` for reference). The **visual design** was intentionally revised to remove the
+generic "AI-generated app" look. These are deliberate and should be preserved:
+
+- **Typography** — the wordmark and screen titles (`<h1>`/`<h2>`) render in *Fraunces*,
+  an editorial serif; UI text is *Inter*; numeric readouts use a mono face. Fonts are
+  loaded in `index.html` and applied in `index.css` by targeting the heading elements,
+  so component markup stays untouched.
+- **Palette** — `themes.js` was retuned to a warm printed-atlas feel: warm paper (light)
+  / warm ink (dark) with a vermilion / slate-teal / brass accent trio, replacing the
+  original candy-bright coral/blue.
+- **Chrome** — a custom SVG favicon (a 3×3 grid mark, `public/favicon.svg`) and a couple
+  of decorative emoji removed from button labels (e.g. "Copy result").
+
+If you touch styling, stay within this system (theme object + the three font roles).
+Do not reintroduce Tailwind color classes or generic system-ui headings.
+
+---
+
+## Accessibility
+
+The app is built to be keyboard-operable and screen-reader friendly. Preserve these
+patterns when adding UI:
+
+- **Country Picker** is an ARIA combobox + listbox in a modal dialog:
+  - `role="dialog" aria-modal="true"`, focus is trapped (Tab wraps), Escape closes,
+    and focus is restored to the trigger on close.
+  - The filter input keeps DOM focus (`role="combobox"`, `aria-autocomplete="list"`).
+    Arrow Up/Down move a virtual active option via `aria-activedescendant`; Enter selects
+    it; Home/End jump to ends; typing filters (type-ahead). Options are `role="option"`
+    with `aria-selected`.
+  - The alphabet rail is `tabIndex={-1}` (mouse convenience, not in the tab sequence).
+- **Icon-only buttons** (back arrows, close, theme toggle, card nav) always carry an
+  `aria-label`; the glyph itself is wrapped in `aria-hidden`.
+- **Decorative emoji** are `aria-hidden`. Emoji that also convey meaning are paired with
+  real text (which is what screen readers announce).
+- **Grid cells** have descriptive `aria-label`s (the two category names + state), use
+  `aria-pressed` for the selected cell, and are `disabled` once solved / after the game
+  ends. Toggle chips in Country Quiz use `aria-pressed`.
+- **Live regions** announce dynamic changes: the GridGame toast (`role="status"
+  aria-live="assertive"`), the Quick Fire answer reveal and Country Quiz fun-fact
+  (`aria-live="polite"`), and the numeric score/guesses readouts (`role="status"`).
+- **Focus ring**: a theme-colored `:focus-visible` outline is defined in `index.css`
+  (color comes from the `--focus-ring` CSS variable set on the root in `App.jsx`).
+- **Reduced motion**: `@media (prefers-reduced-motion: reduce)` neutralizes animations
+  and transitions in `index.css`.
+- A `.sr-only` utility class is available for visually-hidden text.
+
+Do not remove `aria-label`s or replace real text labels with emoji-only content.
+
+---
+
+## Country flags
+
+Flags are rendered by the `Flag` component (`components/ui/Flag.jsx`) as real SVGs via
+the `flag-icons` package (`className="fi fi-<iso2>"`, CSS imported in `main.jsx`).
+
+**Why not emoji:** regional-indicator flag emoji do not render on Windows (no glyphs in
+the system fonts) — they show the bare ISO letter pair ("US") instead. SVGs render on
+every platform. `flag-icons` bundles the SVGs locally, so this stays offline-first (no
+external requests). `Flag` sets explicit px width/height (4:3) so it renders identically
+in list rows, grid cells, and cards.
+
+Flags appear in the picker list rows, in filled GridGame and PostGame cells, and on
+Quick Fire / Country Quiz cards. They are always `aria-hidden` — the country name text is
+the accessible label. (`getFlag()` in `data/iso2.js` — the old emoji helper — is retained
+but no longer used in the UI.)
+
+---
+
+## Screens and navigation
+
+Navigation is managed by a single `scr` string state in `App.jsx`. Valid values:
+
+| `scr` value   | Screen rendered      |
+|---------------|----------------------|
+| `"home"`      | Home                 |
+| `"grid"`      | GridGame             |
+| `"post"`      | PostGame             |
+| `"practice"`  | PracticeLanding      |
+| `"quiz"`      | CountryQuiz          |
+| `"quickfire"` | QuickFire            |
+| `"stats"`     | Stats                |
+
+There is no router library. Do not add one. The app is intentionally single-page with
+manual screen switching.
+
+Daily grid state: `dd` boolean tracks whether today's daily has been played. If true,
+navigating to "daily" shows PostGame instead of starting a new game.
+
+---
+
+## UI conventions
+
+### No Tailwind in components
+Tailwind is installed for potential future use but all component styles use inline
+`style={{}}` objects referencing the theme. Do not refactor to Tailwind classes.
+
+### CatTag component
+Used in both GridGame and PostGame grid headers. Takes `{id, t, s}` where `s` is
+a boolean for compact/small mode. Always renders emoji + label stacked vertically
+with `gap: s ? 3 : 4` between them.
+
+### Country Picker (bottom sheet)
+The `Picker` component slides up from the bottom of the screen. It:
+- Shows ALL 193 countries (no filtering of already-used countries — a country can
+  be valid for multiple cells)
+- Groups by first letter with sticky letter headers
+- Has an alphabet rail on the right edge for jump navigation
+- Has a text filter input at the top
+
+### Toast messages
+In GridGame, feedback toasts appear in a fixed 36px slot immediately below the grid.
+They do NOT use `position: fixed` and do NOT overlap the grid headers. This was a
+deliberate fix from an earlier bug.
+
+### Grid rows
+Each grid row is wrapped in a `display:contents` div (keyed) rather than a bare
+fragment. This keeps the CatTag + 3 cells participating directly in the CSS grid while
+giving React a stable key — visually identical to the prototype, without the key warning.
+
+### Animations
+Two keyframe animations are defined inline in GridGame:
+- `shake` — applied to cells on wrong guess
+- `toastIn` — applied to toast messages
+
+---
+
+## What to build next
+
+These features are planned but not yet implemented. Build them in this order:
+
+1. **Persistence (localStorage)** — save daily completion (`geosense_v1_state`), streaks,
+   Quick Fire best streak, so refresh doesn't reset progress.
+2. **Post-game fact cards** — a one-line, data-derived geography fact per cell intersection.
+3. **Training Mode** — the "coming soon" mode: per-user (country, category) familiarity
+   scores in localStorage, spaced-repetition intervals, grids targeting weak spots.
+4. **Two Truths and a Lie** — a third Practice sub-mode.
+5. **PWA / offline support** — service worker + web manifest (app is already client-side).
+6. **Shareable results** — a proper share image (OG card) from the PostGame emoji grid.
+
+---
+
+## Things never to do
+
+- **Do not add a backend or API calls.** The game is intentionally offline-first.
+- **Do not add a router.** Navigation is a single `scr` state string.
+- **Do not add a state management library.** useState + prop passing is sufficient.
+- **Do not use Tailwind classes in components.** All styling is inline via theme object.
+- **Do not change the daily seed formula.** It must stay deterministic by date.
+- **Do not filter used countries from the Picker.** A country can be the correct
+  answer for multiple cells in the same grid.
+- **Do not show name-based categories in Practice modes** (Country Quiz or Quick Fire).
+- **Do not change the minimum cell answer threshold** (currently 3).
+
+---
+
+## Running locally
+
+```bash
+npm install
+npm run dev       # starts at http://localhost:5173 (opens the browser)
+npm run build     # production build to /dist
+npm run preview   # preview production build locally
+```
+
+Vite provides hot module replacement — edits to any file live-reload in the browser.
+
+---
+
+## File the prototype came from
+
+The entire game was prototyped as a single React artifact (`geosense-v3.jsx`, ~750 lines).
+The reference copy lives in `/docs/geosense-v3.jsx`. Do not import it — use it only as the
+source of truth for intended behavior. The refactor did not change any game logic.

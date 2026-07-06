@@ -1,0 +1,94 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-mono: 'Space Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Editorial display type for the wordmark and screen titles.
+   The prototype renders these as <h1>/<h2>, so styling the elements
+   keeps component markup untouched while reskinning the whole app. */
+h1, h2 {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Numeric readouts (score, streak, guesses left) use the mono face for
+   a deliberate, instrument-panel feel rather than default system numerals. */
+input {
+  font-family: inherit;
+}
+
+::selection {
+  background: rgba(232, 106, 91, 0.25);
+}
+
+/* Visible focus for keyboard users only (mouse clicks don't get the ring).
+   Uses the accent color via a CSS variable set per-theme on <body>. */
+:focus-visible {
+  outline: 2.5px solid var(--focus-ring, #2F6079);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+/* Don't show the ring for pointer interactions. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Screen-reader-only helper: present in the accessibility tree, visually hidden. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Thin, unobtrusive scrollbars in the country picker. */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.35);
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
