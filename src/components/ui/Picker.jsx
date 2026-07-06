@@ -16,7 +16,7 @@ import { CATS } from "../../data/categories";
 // being answered, shown in the header so the player sees the two clues they must
 // satisfy. Flags are intentionally NOT shown in the list — they would give away
 // flag-based category clues.
-export default function Picker({onPick,onClose,t,hints,side}){
+export default function Picker({onPick,onClose,t,hints,side,used}){
   const [q,setQ]=useState("");
   const [active,setActive]=useState(0);
   const inputRef=useRef(null);
@@ -33,6 +33,9 @@ export default function Picker({onPick,onClose,t,hints,side}){
     // mid-word). Split on spaces and hyphens (e.g. Guinea-Bissau).
     return all.filter(c=>c.name.toLowerCase().split(/[\s-]+/).some(w=>w.startsWith(ql)));
   },[q,all]);
+  // Countries already placed correctly are shown disabled — a correct answer is
+  // locked to its cell and can't be reused elsewhere in the grid.
+  const usedSet=useMemo(()=>new Set(used||[]),[used]);
 
   // Grouped for display, but each item carries its flat index into `list`
   // so keyboard navigation and rendering share one indexing scheme.
@@ -81,7 +84,7 @@ export default function Picker({onPick,onClose,t,hints,side}){
     if(e.key==="ArrowUp"){e.preventDefault();setActive(a=>Math.max((a<0?list.length:a)-1,0));return;}
     if(e.key==="Home"){e.preventDefault();setActive(list.length?0:-1);return;}
     if(e.key==="End"){e.preventDefault();setActive(list.length-1);return;}
-    if(e.key==="Enter"){e.preventDefault();if(active>=0&&list[active])onPick(list[active].name);return;}
+    if(e.key==="Enter"){e.preventDefault();if(active>=0&&list[active]&&!usedSet.has(list[active].name))onPick(list[active].name);return;}
     // Focus trap: keep Tab within the dialog.
     if(e.key==="Tab"){
       const f=sheetRef.current?.querySelectorAll('button, input, [href], [tabindex]:not([tabindex="-1"])');
@@ -90,7 +93,7 @@ export default function Picker({onPick,onClose,t,hints,side}){
       if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
       else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
     }
-  },[list,active,onPick,onClose]);
+  },[list,active,onPick,onClose,usedSet]);
 
   // Layout: on wide screens a right-side panel (the puzzle slides left); otherwise
   // a bottom sheet that lifts above the on-screen keyboard via the visual viewport.
@@ -139,11 +142,15 @@ export default function Picker({onPick,onClose,t,hints,side}){
             {groups.map(g=>(<div key={g.letter} role="group" aria-label={g.letter}>
               <div id={`gl-${g.letter}`} aria-hidden="true" style={{position:"sticky",top:0,background:t.sf,padding:"7px 0 3px",fontSize:11,fontWeight:800,color:t.pri,letterSpacing:2,fontFamily:"var(--font-mono)"}}>{g.letter}</div>
               {g.items.map(({c,i})=>{
-                const isActive=i===active;
-                return(<div key={c.name} id={`picker-opt-${i}`} role="option" aria-selected={isActive}
-                  onClick={()=>onPick(c.name)} onMouseMove={()=>setActive(i)}
-                  style={{padding:"11px 6px",borderBottom:`1px solid ${t.bd}20`,color:t.tx,fontSize:15,cursor:"pointer",
-                    background:isActive?t.selBg:"transparent",borderRadius:isActive?6:0}}>{c.name}</div>);
+                const isActive=i===active,isUsed=usedSet.has(c.name);
+                return(<div key={c.name} id={`picker-opt-${i}`} role="option" aria-selected={isActive} aria-disabled={isUsed||undefined}
+                  onClick={()=>{if(!isUsed)onPick(c.name);}} onMouseMove={()=>{if(!isUsed)setActive(i);}}
+                  style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 6px",borderBottom:`1px solid ${t.bd}20`,fontSize:15,
+                    color:isUsed?t.txD:t.tx,opacity:isUsed?0.55:1,cursor:isUsed?"default":"pointer",
+                    background:(isActive&&!isUsed)?t.selBg:"transparent",borderRadius:isActive?6:0}}>
+                  <span>{c.name}</span>
+                  {isUsed&&<span aria-hidden="true" style={{fontSize:11,color:t.ok,fontWeight:700}}>✓ used</span>}
+                </div>);
               })}
             </div>))}
           </div>

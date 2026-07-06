@@ -70,6 +70,8 @@ export default function GridGame({onBack,onDone,grid,mode,onNewPuzzle,t,initial,
   const showToast=(txt,good)=>{setToast({txt,good});setTimeout(()=>setToast(null),1200);};
   const guess=useCallback(name=>{
     if(sel===null||done)return;
+    // A correct answer is locked to its cell — it can't be reused elsewhere.
+    if(cells.some(x=>x?.ok&&x.name===name))return;
     const idx=sel,r=Math.floor(sel/3),c=sel%3;
     const co=DB.find(x=>x.name===name);
     const ok=co&&CATS[grid.rows[r]].t(co)&&CATS[grid.cols[c]].t(co);
@@ -140,7 +142,7 @@ export default function GridGame({onBack,onDone,grid,mode,onNewPuzzle,t,initial,
       {log.length>0&&(<div aria-label="Countries you have guessed" style={{display:"flex",flexWrap:"wrap",gap:3}}>
         {log.map(g=>(<span key={g.name} style={{fontSize:9.5,padding:"1.5px 7px",borderRadius:5,background:g.ok?t.okBg:t.noBg,color:g.ok?t.ok:t.pri,border:`1px solid ${g.ok?t.okBd:t.noBd}30`}}>{g.name}</span>))}
       </div>)}
-      {sel!==null&&<Picker onPick={guess} onClose={()=>setSel(null)} t={t} side={wide} hints={[grid.rows[Math.floor(sel/3)],grid.cols[sel%3]]}/>}
+      {sel!==null&&<Picker onPick={guess} onClose={()=>setSel(null)} t={t} side={wide} used={cells.filter(x=>x?.ok).map(x=>x.name)} hints={[grid.rows[Math.floor(sel/3)],grid.cols[sel%3]]}/>}
       <style>{`@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}@keyframes toastIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}`}</style>
     </div>
     </div>);

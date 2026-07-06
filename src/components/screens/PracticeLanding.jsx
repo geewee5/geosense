@@ -1,3 +1,5 @@
+import { CAT_KEYS } from "../../data/categories";
+
 // ─── PRACTICE LANDING ───
 export default function PracticeLanding({onBack,onQuiz,onQuickFire,t}){
   return(
@@ -15,7 +17,7 @@ export default function PracticeLanding({onBack,onQuiz,onQuickFire,t}){
           <p style={{fontSize:13,color:t.txM,margin:0,lineHeight:1.5}}>See a country, pick which traits apply from 8 curated options. 4 are true, 4 are decoys. A "Did you know?" reveal after each round teaches you the surprising facts.</p>
           <div aria-hidden="true" style={{marginTop:10,display:"flex",gap:6}}>
             {["👑","⭐","🏅","🛡️"].map(e=><span key={e} style={{fontSize:12,padding:"2px 8px",background:t.sf2,borderRadius:6}}>{e}</span>)}
-            <span style={{fontSize:11,color:t.txD,alignSelf:"center"}}>33 categories</span>
+            <span style={{fontSize:11,color:t.txD,alignSelf:"center"}}>{CAT_KEYS.length} categories</span>
           </div>
         </button>
         <button onClick={onQuickFire} style={{textAlign:"left",padding:"18px",background:t.sf,borderRadius:12,border:`1px solid ${t.bd}50`,borderLeft:`4px solid ${t.sec}`,boxShadow:t.shd,cursor:"pointer"}}>

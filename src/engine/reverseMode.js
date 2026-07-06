@@ -23,7 +23,7 @@ export function pickRevCats(country){
   // Score false categories by plausibility: common in same continent = trickier
   const falseScored=falseKeys.map(k=>{
     let score=CATS[k].d; // harder categories = trickier
-    const sameContMatches=CAT_MEMBERS[k].filter(c=>c.cont===country.cont).length;
+    const sameContMatches=CAT_MEMBERS[k].filter(c=>c.continent===country.continent).length;
     score+=sameContMatches>3?3:sameContMatches>0?1:0;
     return{k,score};
   });
@@ -41,14 +41,13 @@ export function pickRevCats(country){
 
 const FLAG_KEYS=["fl_red","fl_blue","fl_green","fl_stars","fl_crescent","fl_animal","fl_cross","fl_text"];
 const FLAG_LABELS={fl_red:"red",fl_blue:"blue",fl_green:"green",fl_stars:"stars",fl_crescent:"crescent",fl_animal:"animal",fl_cross:"cross",fl_text:"text/script"};
-const CONT_NAMES=["Europe","Asia","Africa","N. America","S. America","Oceania"];
 
 // Human-readable enrichment string for the Quick Fire answer reveal.
 export function enrichAnswer(card){
   const{co,cat,answer}=card;
   if(cat==="gdp40k"||cat==="gdp20k")return`GDP per capita: ~$${co.gdp>=1?Math.round(co.gdp):co.gdp}K`;
   if(cat==="pop50")return`Population: ~${co.pop>=1?Math.round(co.pop):co.pop}M`;
-  if(cat==="locked")return answer?"Landlocked, no coastline":`Has a coastline (in ${CONT_NAMES[co.cont]})`;
+  if(cat==="locked")return answer?"Landlocked, no coastline":`Has a coastline (in ${co.continent})`;
   if(cat==="island")return answer?"Entirely surrounded by water":"Has land borders";
   if(cat==="left")return answer?"Drives on the left side":"Drives on the right side";
   if(cat.startsWith("fl")){
@@ -57,6 +56,6 @@ export function enrichAnswer(card){
   }
   if(cat==="monarchy")return answer?`${co.pm?"Constitutional":"Absolute"} monarchy`:"Republic";
   if(cat==="pmHead")return co.pm?"Parliamentary system (PM leads)":"Presidential system";
-  if(cat==="europe"||cat==="asia"||cat==="africa"||cat==="americas")return`Located in ${CONT_NAMES[co.cont]}`;
+  if(cat==="europe"||cat==="asia"||cat==="africa"||cat==="americas")return`Located in ${co.continent}`;
   return"";
 }
