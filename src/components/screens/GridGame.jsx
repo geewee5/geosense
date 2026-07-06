@@ -102,7 +102,7 @@ export default function GridGame({onBack,onDone,grid,mode,onNewPuzzle,t,initial,
           <div style={{fontSize:13,fontWeight:700,color:t.tx}}>{mode==="daily"?"Daily Grid":"Random Puzzle"}</div>
           <div style={{fontSize:10,color:t.txD}}>{diffLabel} difficulty</div>
         </div>
-        <div role="status" aria-label={`${gl} guesses left`} style={{textAlign:"center",padding:"3px 10px",marginRight:44,borderRadius:8,background:gl<=3?t.noBg:t.sf2,border:gl<=3?`1.5px solid ${t.noBd}`:"1.5px solid transparent"}}>
+        <div role="status" aria-label={`${gl} guesses left`} style={{textAlign:"center",padding:"3px 10px",borderRadius:8,background:gl<=3?t.noBg:t.sf2,border:gl<=3?`1.5px solid ${t.noBd}`:"1.5px solid transparent"}}>
           <div aria-hidden="true" style={{fontFamily:"var(--font-mono)",fontSize:19,fontWeight:800,color:gl<=3?t.pri:t.tx,lineHeight:1}}>{gl}</div>
           <div aria-hidden="true" style={{fontSize:7.5,color:t.txD,textTransform:"uppercase",letterSpacing:1}}>left</div>
         </div>

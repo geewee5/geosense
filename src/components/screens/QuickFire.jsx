@@ -47,11 +47,11 @@ export default function QuickFire({onBack,t}){
   const bgFlash=!viewing&&fb==="correct"?t.okBg:!viewing&&fb==="wrong"?t.noBg:t.bg;
 
   return(
-    <div style={{minHeight:"100dvh",background:bgFlash,transition:"background .15s",padding:"16px",maxWidth:420,margin:"0 auto"}}>
+    <div style={{minHeight:"100%",background:bgFlash,transition:"background .15s",padding:"16px",maxWidth:420,margin:"0 auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
         <button onClick={onBack} aria-label="Back to practice menu" style={{background:t.sf2,border:"none",borderRadius:8,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:t.txM,fontSize:17}}><span aria-hidden="true">←</span></button>
         <span style={{fontSize:14,fontWeight:700,color:t.sec}}><span aria-hidden="true">⚡ </span>Quick Fire</span>
-        <div role="status" aria-label={`Score ${score.c} of ${score.tot}, ${pct}% correct`} style={{textAlign:"right",marginRight:44}}>
+        <div role="status" aria-label={`Score ${score.c} of ${score.tot}, ${pct}% correct`} style={{textAlign:"right"}}>
           <div aria-hidden="true" style={{fontFamily:"var(--font-mono)",fontSize:14,fontWeight:700,color:t.tx}}>{score.c}/{score.tot}</div>
           <div aria-hidden="true" style={{fontSize:9,color:t.txD}}>{pct}% correct</div>
         </div>

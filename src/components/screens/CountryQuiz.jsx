@@ -41,7 +41,7 @@ export default function CountryQuiz({onBack,t}){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
         <button onClick={onBack} aria-label="Back to practice menu" style={{background:t.sf2,border:"none",borderRadius:8,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:t.txM,fontSize:17}}><span aria-hidden="true">←</span></button>
         <span style={{fontSize:14,fontWeight:700,color:t.honey}}><span aria-hidden="true">🎯 </span>Country Quiz</span>
-        <span aria-label={`Question ${idx+1} of ${pool.length}`} style={{fontSize:11,color:t.txD,fontFamily:"var(--font-mono)",marginRight:44}}>{idx+1}/{pool.length}</span>
+        <span aria-label={`Question ${idx+1} of ${pool.length}`} style={{fontSize:11,color:t.txD,fontFamily:"var(--font-mono)"}}>{idx+1}/{pool.length}</span>
       </div>
       <div style={{textAlign:"center",padding:"20px 14px",background:t.sf,borderRadius:12,borderLeft:`4px solid ${t.honey}`,marginBottom:6,boxShadow:t.shd}}>
         <div style={{fontSize:12,color:t.txD,marginBottom:2}}>Which traits apply to</div>

@@ -3,8 +3,8 @@ export default function Home({onNav,streak,t}){
   return(
     <div style={{padding:"32px 20px 20px",maxWidth:420,margin:"0 auto"}}>
       <div style={{marginBottom:28}}>
-        <h1 style={{fontSize:36,fontWeight:700,color:t.tx,margin:0,letterSpacing:-.5}}>Geo<span style={{fontWeight:400,color:t.sec}}>Sense</span></h1>
-        <p style={{color:t.txD,fontSize:13,margin:"3px 0 0"}}>How well do you know the world's countries?</p>
+        <h1 style={{fontSize:28,fontWeight:700,color:t.tx,margin:0,letterSpacing:-.3}}>Know the world</h1>
+        <p style={{color:t.txD,fontSize:13,margin:"5px 0 0"}}>How well do you know the world's countries?</p>
       </div>
       {streak>0&&(<div aria-label={`Current streak: ${streak} days`} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 14px",background:t.sf,borderRadius:20,marginBottom:14,boxShadow:t.shd}}>
         <span aria-hidden="true" style={{fontSize:15}}>🔥</span><span aria-hidden="true" style={{fontFamily:"var(--font-mono)",fontWeight:800,fontSize:17,color:t.honey}}>{streak}</span><span aria-hidden="true" style={{color:t.txD,fontSize:11}}>day streak</span>

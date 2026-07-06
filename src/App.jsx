@@ -72,8 +72,16 @@ export default function App(){
   const go=r=>{ window.location.hash = "#/"+r; }; // "" -> home
 
   return(
-    <div style={{minHeight:"100dvh",background:t.bg,color:t.tx,transition:"background .3s,color .3s",position:"relative",fontFamily:"var(--font-body)",paddingTop:"env(safe-area-inset-top)","--focus-ring":t.sec}}>
-      <ThemeToggle dk={dk} onToggle={()=>setDk(!dk)} t={t}/>
+    <div style={{height:"100dvh",display:"flex",flexDirection:"column",overflow:"hidden",background:t.bg,color:t.tx,transition:"background .3s,color .3s",fontFamily:"var(--font-body)","--focus-ring":t.sec}}>
+      {/* Shared header: stays put because the content below it scrolls, not the
+          header itself (avoids iOS position:fixed drift). */}
+      <header style={{flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",paddingTop:"calc(env(safe-area-inset-top) + 10px)",background:t.bg,borderBottom:`1px solid ${t.bd}`,zIndex:10}}>
+        <button onClick={()=>go("")} aria-label="GeoSense — home" style={{background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"var(--font-display)",fontSize:22,fontWeight:700,letterSpacing:-.5,color:t.tx,lineHeight:1}}>
+          Geo<span style={{fontWeight:400,color:t.sec}}>Sense</span>
+        </button>
+        <ThemeToggle dk={dk} onToggle={()=>setDk(!dk)} t={t}/>
+      </header>
+      <main style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",minHeight:0}}>
 
       {scr==="home"&&<Home t={t} streak={st.s} onNav={id=>go(id)}/>}
 
@@ -89,5 +97,6 @@ export default function App(){
       {scr==="quiz"&&<CountryQuiz t={t} onBack={()=>go("practice")}/>}
       {scr==="quickfire"&&<QuickFire t={t} onBack={()=>go("practice")}/>}
       {scr==="stats"&&<Stats t={t} onBack={()=>go("")} p={st.p} s={st.s} b={st.b} sc={st.sc}/>}
+      </main>
     </div>);
 }
