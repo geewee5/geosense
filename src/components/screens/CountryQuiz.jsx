@@ -1,17 +1,20 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { DB } from "../../data/countries";
 import { CAT_KEYS, CATS } from "../../data/categories";
 import { shuffle } from "../../engine/utils";
 import Flag from "../ui/Flag";
 import { REV_POOL, pickRevCats } from "../../engine/reverseMode";
+import { usePersistentState, loadKey, saveKey } from "../../engine/storage";
 
 // ─── COUNTRY QUIZ (formerly Reverse Mode) ───
 export default function CountryQuiz({onBack,t}){
-  const pool=useMemo(()=>shuffle([...REV_POOL],()=>Math.random()),[]);
-  const [idx,setIdx]=useState(0);
+  // Persist the shuffled order + position + score so the tab resumes on refresh.
+  const [pool]=useState(()=>loadKey("cq_pool", null)||shuffle([...REV_POOL],()=>Math.random()));
+  useEffect(()=>{saveKey("cq_pool",pool);},[pool]);
+  const [idx,setIdx]=usePersistentState("cq_idx",0);
   const [sel,setSel]=useState(new Set());
   const [rev,setRev]=useState(false);
-  const [tot,setTot]=useState({c:0,t:0});
+  const [tot,setTot]=usePersistentState("cq_tot",{c:0,t:0});
 
   const co=DB.find(c=>c.name===pool[idx%pool.length]);
   // Dynamic categories per country
@@ -38,7 +41,7 @@ export default function CountryQuiz({onBack,t}){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
         <button onClick={onBack} aria-label="Back to practice menu" style={{background:t.sf2,border:"none",borderRadius:8,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:t.txM,fontSize:17}}><span aria-hidden="true">←</span></button>
         <span style={{fontSize:14,fontWeight:700,color:t.honey}}><span aria-hidden="true">🎯 </span>Country Quiz</span>
-        <span aria-label={`Question ${idx+1} of ${pool.length}`} style={{fontSize:11,color:t.txD,fontFamily:"var(--font-mono)"}}>{idx+1}/{pool.length}</span>
+        <span aria-label={`Question ${idx+1} of ${pool.length}`} style={{fontSize:11,color:t.txD,fontFamily:"var(--font-mono)",marginRight:44}}>{idx+1}/{pool.length}</span>
       </div>
       <div style={{textAlign:"center",padding:"20px 14px",background:t.sf,borderRadius:12,borderLeft:`4px solid ${t.honey}`,marginBottom:6,boxShadow:t.shd}}>
         <div style={{fontSize:12,color:t.txD,marginBottom:2}}>Which traits apply to</div>

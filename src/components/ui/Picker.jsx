@@ -16,15 +16,23 @@ import { CATS } from "../../data/categories";
 // being answered, shown in the header so the player sees the two clues they must
 // satisfy. Flags are intentionally NOT shown in the list — they would give away
 // flag-based category clues.
-export default function Picker({onPick,onClose,t,hints}){
+export default function Picker({onPick,onClose,t,hints,side}){
   const [q,setQ]=useState("");
   const [active,setActive]=useState(0);
   const inputRef=useRef(null);
   const sheetRef=useRef(null);
   const restoreRef=useRef(null);
+  const [vp,setVp]=useState(null);
 
   const all=useMemo(()=>[...DB].sort((a,b)=>a.name.localeCompare(b.name)),[]);
-  const list=useMemo(()=>q?all.filter(c=>c.name.toLowerCase().includes(q.toLowerCase())):all,[q,all]);
+  const list=useMemo(()=>{
+    if(!q)return all;
+    const ql=q.toLowerCase();
+    // Match when ANY word in the name starts with the query — so "k" returns
+    // South Korea / North Korea (word "Korea"), but not Denmark (contains "k"
+    // mid-word). Split on spaces and hyphens (e.g. Guinea-Bissau).
+    return all.filter(c=>c.name.toLowerCase().split(/[\s-]+/).some(w=>w.startsWith(ql)));
+  },[q,all]);
 
   // Grouped for display, but each item carries its flat index into `list`
   // so keyboard navigation and rendering share one indexing scheme.
@@ -43,6 +51,16 @@ export default function Picker({onPick,onClose,t,hints}){
     restoreRef.current=document.activeElement;
     inputRef.current?.focus();
     return()=>{restoreRef.current?.focus?.();};
+  },[]);
+
+  // Track the visual viewport so the sheet can sit above the on-screen keyboard.
+  // Mobile browsers overlay the keyboard without resizing the layout viewport,
+  // which would otherwise hide the results list behind it.
+  useEffect(()=>{
+    const v=window.visualViewport;if(!v)return;
+    const on=()=>setVp({h:v.height,top:v.offsetTop});
+    on();v.addEventListener("resize",on);v.addEventListener("scroll",on);
+    return()=>{v.removeEventListener("resize",on);v.removeEventListener("scroll",on);};
   },[]);
 
   // Keep the active option scrolled into view.
@@ -74,13 +92,25 @@ export default function Picker({onPick,onClose,t,hints}){
     }
   },[list,active,onPick,onClose]);
 
+  // Layout: on wide screens a right-side panel (the puzzle slides left); otherwise
+  // a bottom sheet that lifts above the on-screen keyboard via the visual viewport.
+  const kbOpen=!side&&vp&&(window.innerHeight-vp.h>120);
+  const wrapStyle=side
+    ?{position:"fixed",inset:0,zIndex:100,display:"flex",flexDirection:"row",justifyContent:"flex-end"}
+    :kbOpen
+      ?{position:"fixed",left:0,right:0,top:vp.top,height:vp.h,zIndex:100,display:"flex",flexDirection:"column",justifyContent:"flex-end"}
+      :{position:"fixed",inset:0,zIndex:100,display:"flex",flexDirection:"column",justifyContent:"flex-end"};
+  const sheetStyle=side
+    ?{position:"relative",background:t.sf,width:Math.min(420,window.innerWidth*0.9),height:"100%",borderRadius:"18px 0 0 18px",display:"flex",flexDirection:"column",boxShadow:"-4px 0 24px rgba(0,0,0,.18)"}
+    :{position:"relative",background:t.sf,borderRadius:"18px 18px 0 0",maxHeight:kbOpen?vp.h-6:"70vh",display:"flex",flexDirection:"column",boxShadow:"0 -4px 24px rgba(0,0,0,.15)"};
+
   return(
-    <div style={{position:"fixed",inset:0,zIndex:100,display:"flex",flexDirection:"column",justifyContent:"flex-end"}} onKeyDown={onKeyDown}>
-      <div onClick={onClose} aria-hidden="true" style={{position:"absolute",inset:0,background:"rgba(0,0,0,.45)",backdropFilter:"blur(2px)"}}/>
+    <div style={wrapStyle} onKeyDown={onKeyDown}>
+      <div onClick={onClose} aria-hidden="true" style={{position:"absolute",inset:0,background:side?"transparent":"rgba(0,0,0,.45)",backdropFilter:side?"none":"blur(2px)"}}/>
       <div ref={sheetRef} role="dialog" aria-modal="true"
         aria-label={hints?`Pick a country that is ${hints.map(id=>CATS[id].l).join(" and ")}`:"Pick a country"}
-        style={{position:"relative",background:t.sf,borderRadius:"18px 18px 0 0",maxHeight:"70vh",display:"flex",flexDirection:"column",boxShadow:"0 -4px 24px rgba(0,0,0,.15)"}}>
-        <div style={{display:"flex",justifyContent:"center",padding:"10px 0 2px"}}><div aria-hidden="true" style={{width:32,height:4,borderRadius:2,background:t.bd}}/></div>
+        style={sheetStyle}>
+        {!side&&<div style={{display:"flex",justifyContent:"center",padding:"10px 0 2px"}}><div aria-hidden="true" style={{width:32,height:4,borderRadius:2,background:t.bd}}/></div>}
         <div style={{padding:"6px 18px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span style={{fontWeight:700,fontSize:16,color:t.tx}}>Pick a country</span>
           <button onClick={onClose} aria-label="Close country picker" style={{background:t.sf2,border:"none",borderRadius:18,width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:t.txD,fontSize:14,fontWeight:800}}><span aria-hidden="true">✕</span></button>

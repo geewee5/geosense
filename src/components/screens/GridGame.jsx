@@ -48,16 +48,25 @@ const RIGHT_MSGS=["Nice! 📍","Got it!","Correct! 🎯","Bang on!","Spot on �
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 
 // ─── GRID GAME (shared by Daily + Random) ───
-export default function GridGame({onBack,onDone,grid,mode,onNewPuzzle,t}){
-  const [cells,setCells]=useState(Array(9).fill(null));
+export default function GridGame({onBack,onDone,grid,mode,onNewPuzzle,t,initial,onProgress}){
+  // Seed from saved progress (if resuming after a refresh), else a fresh grid.
+  const [cells,setCells]=useState(initial?.cells||Array(9).fill(null));
   const [sel,setSel]=useState(null);
-  const [gl,setGl]=useState(12);
-  const [log,setLog]=useState([]);
+  const [gl,setGl]=useState(initial?.gl??12);
+  const [log,setLog]=useState(initial?.log||[]);
   const [flash,setFlash]=useState(null);
   const [toast,setToast]=useState(null);
+  // On wide screens the picker becomes a right-side panel and the puzzle slides
+  // left; on narrow screens it stays a bottom sheet.
+  const [wide,setWide]=useState(()=>typeof window!=="undefined"&&window.innerWidth>=900);
+  useEffect(()=>{const on=()=>setWide(window.innerWidth>=900);window.addEventListener("resize",on);return()=>window.removeEventListener("resize",on);},[]);
+  const PANEL_W=420;
+  const panelOpen=sel!==null&&wide;
   const sc=cells.filter(c=>c?.ok).length;
   const done=sc===9||gl===0;
   useEffect(()=>{if(done)setTimeout(()=>onDone(cells,gl,grid),900);},[done]);
+  // Report progress up so App can persist it (survives refresh).
+  useEffect(()=>{onProgress&&onProgress({cells,gl,log});},[cells,gl,log]);
   const showToast=(txt,good)=>{setToast({txt,good});setTimeout(()=>setToast(null),1200);};
   const guess=useCallback(name=>{
     if(sel===null||done)return;
@@ -85,14 +94,15 @@ export default function GridGame({onBack,onDone,grid,mode,onNewPuzzle,t}){
   const diffLabel=avgDiff<1.5?"Easy":avgDiff<2.3?"Medium":"Hard";
 
   return(
-    <div style={{padding:"14px 10px",maxWidth:420,margin:"0 auto",paddingBottom:sel!==null?300:14}}>
+    <div style={{paddingRight:panelOpen?PANEL_W:0,transition:"padding-right .25s ease"}}>
+    <div style={{padding:"14px 10px",maxWidth:420,margin:"0 auto",paddingBottom:(sel!==null&&!wide)?300:14}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
         <button onClick={onBack} aria-label="Back to home" style={{background:t.sf2,border:"none",borderRadius:8,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:t.txM,fontSize:17}}><span aria-hidden="true">←</span></button>
         <div style={{textAlign:"center"}}>
           <div style={{fontSize:13,fontWeight:700,color:t.tx}}>{mode==="daily"?"Daily Grid":"Random Puzzle"}</div>
           <div style={{fontSize:10,color:t.txD}}>{diffLabel} difficulty</div>
         </div>
-        <div role="status" aria-label={`${gl} guesses left`} style={{textAlign:"center",padding:"3px 10px",borderRadius:8,background:gl<=3?t.noBg:t.sf2,border:gl<=3?`1.5px solid ${t.noBd}`:"1.5px solid transparent"}}>
+        <div role="status" aria-label={`${gl} guesses left`} style={{textAlign:"center",padding:"3px 10px",marginRight:44,borderRadius:8,background:gl<=3?t.noBg:t.sf2,border:gl<=3?`1.5px solid ${t.noBd}`:"1.5px solid transparent"}}>
           <div aria-hidden="true" style={{fontFamily:"var(--font-mono)",fontSize:19,fontWeight:800,color:gl<=3?t.pri:t.tx,lineHeight:1}}>{gl}</div>
           <div aria-hidden="true" style={{fontSize:7.5,color:t.txD,textTransform:"uppercase",letterSpacing:1}}>left</div>
         </div>
@@ -120,7 +130,7 @@ export default function GridGame({onBack,onDone,grid,mode,onNewPuzzle,t}){
                 padding:3,cursor:isOk||done?"default":"pointer",minHeight:64,transition:"all .12s",position:"relative",
                 color:col,fontSize:11,fontWeight:isOk?700:400,textAlign:"center",lineHeight:1.15,wordBreak:"break-word",
                 animation:isF?"shake .35s ease":"none"}}>
-              {isOk?(<><Flag name={cell.name} size={12}/><span>{cell.name}</span><span aria-hidden="true" style={{position:"absolute",top:2,right:3,fontSize:9}}>📍</span></>):isF?(<span style={{fontSize:11,fontWeight:600,lineHeight:1.15}}>{flash.name}</span>):(<span aria-hidden="true" style={{fontSize:18,opacity:.3}}>+</span>)}
+              {isOk?(<><Flag name={cell.name} size={12}/><span>{cell.name}</span></>):isF?(<span style={{fontSize:11,fontWeight:600,lineHeight:1.15}}>{flash.name}</span>):(<span aria-hidden="true" style={{fontSize:18,opacity:.3}}>+</span>)}
             </button>);})}
         </div>)}
       </div>
@@ -130,7 +140,8 @@ export default function GridGame({onBack,onDone,grid,mode,onNewPuzzle,t}){
       {log.length>0&&(<div aria-label="Countries you have guessed" style={{display:"flex",flexWrap:"wrap",gap:3}}>
         {log.map(g=>(<span key={g.name} style={{fontSize:9.5,padding:"1.5px 7px",borderRadius:5,background:g.ok?t.okBg:t.noBg,color:g.ok?t.ok:t.pri,border:`1px solid ${g.ok?t.okBd:t.noBd}30`}}>{g.name}</span>))}
       </div>)}
-      {sel!==null&&<Picker onPick={guess} onClose={()=>setSel(null)} t={t} hints={[grid.rows[Math.floor(sel/3)],grid.cols[sel%3]]}/>}
+      {sel!==null&&<Picker onPick={guess} onClose={()=>setSel(null)} t={t} side={wide} hints={[grid.rows[Math.floor(sel/3)],grid.cols[sel%3]]}/>}
       <style>{`@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}@keyframes toastIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}`}</style>
+    </div>
     </div>);
 }

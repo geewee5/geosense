@@ -18,7 +18,7 @@ export function genGrid(rng){
 }
 
 // Same puzzle for all users on the same calendar day. Do not change this formula.
-function dailySeed(){const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();}
+export function dailySeed(){const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();}
 
 export function makeDailyGrid(){return genGrid(sRng(dailySeed()));}
 export function makeRandomGrid(){return genGrid(()=>Math.random());}

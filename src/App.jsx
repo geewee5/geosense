@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TH } from "./theme/themes";
-import { makeDailyGrid, makeRandomGrid } from "./engine/puzzleGen";
+import { makeDailyGrid, makeRandomGrid, dailySeed } from "./engine/puzzleGen";
+import { usePersistentState } from "./engine/storage";
 import ThemeToggle from "./components/ui/ThemeToggle";
 import Home from "./components/screens/Home";
 import GridGame from "./components/screens/GridGame";
@@ -11,45 +12,82 @@ import QuickFire from "./components/screens/QuickFire";
 import Stats from "./components/screens/Stats";
 
 // ─── APP ───
-// Thin shell: holds the dark/light theme toggle, top-level navigation (`scr`),
-// game stats (`st`), and the current grid (`curGrid`). Navigation is a single
-// string state — there is intentionally no router.
+// Thin shell. Navigation is driven by the URL hash (#/daily, #/random,
+// #/practice, #/quiz, #/quickfire, #/stats) so each tab is its own shareable
+// page and the browser Back/Forward buttons work — a tiny custom router, no
+// routing library. All game state persists to localStorage (engine/storage.js)
+// so every tab resumes exactly where it left off after a refresh.
 export default function App(){
-  const [dk,setDk]=useState(true);
-  const [scr,setScr]=useState("home");
-  const [pg,setPg]=useState(null);
-  const [st,setSt]=useState({p:0,s:0,b:0,sc:0});
-  const [dd,setDd]=useState(false);
-  const [mode,setMode]=useState("daily");
-  const [curGrid,setCurGrid]=useState(null);
+  const [dk,setDk]=usePersistentState("theme", true);
+  const [st,setSt]=usePersistentState("stats", {p:0,s:0,b:0,sc:0});
+  // Each grid mode keeps its own slot: { grid, progress:{cells,gl,log}|null, pg, dailyDate? }
+  const [daily,setDaily]=usePersistentState("daily", null);
+  const [random,setRandom]=usePersistentState("random", null);
+  // Active route. Initialize straight from the URL hash so a refresh doesn't
+  // flash the home screen before the router runs.
+  const [scr,setScr]=useState(()=>{
+    const r=(window.location.hash||"").replace(/^#\/?/,"").split("/")[0];
+    return ["daily","random","practice","quiz","quickfire","stats"].includes(r)?r:"home";
+  });
   const t=dk?TH.dark:TH.light;
 
-  const startDaily=()=>{setCurGrid(makeDailyGrid());setMode("daily");setScr("grid");};
-  const startRandom=()=>{setCurGrid(makeRandomGrid());setMode("random");setScr("grid");};
-  const newRandom=()=>{setCurGrid(makeRandomGrid());setMode("random");setPg(null);setScr("grid");};
+  // If a saved daily belongs to a previous calendar day, drop it so today's
+  // puzzle is generated fresh.
+  useEffect(()=>{
+    if(daily && daily.dailyDate!==dailySeed()) setDaily(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
 
-  const fin=(cells,gl,grid)=>{
+  const startDaily=()=>setDaily({grid:makeDailyGrid(),progress:null,pg:null,dailyDate:dailySeed()});
+  const startRandom=()=>setRandom({grid:makeRandomGrid(),progress:null,pg:null});
+  const newRandom=()=>setRandom({grid:makeRandomGrid(),progress:null,pg:null});
+
+  const finish=(kind,cells,gl,grid)=>{
     const sc=cells.filter(c=>c?.ok).length;
-    setPg({cells,gl,grid});
-    setSt(s=>({p:s.p+1,s:s.s+1,b:Math.max(s.b,s.s+1),sc:s.sc+sc}));
-    if(mode==="daily")setDd(true);
-    setScr("post");
+    const set=kind==="daily"?setDaily:setRandom;
+    set(s=>s?{...s,pg:{cells,gl,grid},progress:null}:s);
+    setSt(x=>({p:x.p+1,s:x.s+1,b:Math.max(x.b,x.s+1),sc:x.sc+sc}));
   };
 
+  // ── Hash router ──────────────────────────────────────────────────────────
+  // apply() reads current state, so keep it in a ref that's refreshed every
+  // render; the listener (bound once) always calls the latest version.
+  const applyRef=useRef();
+  applyRef.current=(hash)=>{
+    const r=(hash||"").replace(/^#\/?/,"").split("/")[0];
+    if(r==="daily"){ if(!daily||daily.dailyDate!==dailySeed()) startDaily(); setScr("daily"); }
+    else if(r==="random"){ if(!random) startRandom(); setScr("random"); }
+    else if(r==="practice") setScr("practice");
+    else if(r==="quiz") setScr("quiz");
+    else if(r==="quickfire") setScr("quickfire");
+    else if(r==="stats") setScr("stats");
+    else setScr("home");
+  };
+  useEffect(()=>{
+    const on=()=>applyRef.current(window.location.hash);
+    window.addEventListener("hashchange",on);
+    on(); // apply the initial URL (handles refreshes and shared deep links)
+    return ()=>window.removeEventListener("hashchange",on);
+  },[]);
+  const go=r=>{ window.location.hash = "#/"+r; }; // "" -> home
+
   return(
-    <div style={{minHeight:"100vh",background:t.bg,color:t.tx,transition:"background .3s,color .3s",position:"relative",fontFamily:"var(--font-body)","--focus-ring":t.sec}}>
+    <div style={{minHeight:"100dvh",background:t.bg,color:t.tx,transition:"background .3s,color .3s",position:"relative",fontFamily:"var(--font-body)",paddingTop:"env(safe-area-inset-top)","--focus-ring":t.sec}}>
       <ThemeToggle dk={dk} onToggle={()=>setDk(!dk)} t={t}/>
-      {scr==="home"&&<Home t={t} streak={st.s} onNav={id=>{
-        if(id==="daily"){if(dd&&pg)setScr("post");else startDaily();}
-        else if(id==="random")startRandom();
-        else if(id==="practice")setScr("practice");
-        else setScr(id);
-      }}/>}
-      {scr==="grid"&&curGrid&&<GridGame t={t} onBack={()=>setScr("home")} onDone={fin} grid={curGrid} mode={mode} onNewPuzzle={newRandom}/>}
-      {scr==="post"&&pg&&<PostGame t={t} cells={pg.cells} guesses={pg.gl} grid={pg.grid} mode={mode} onBack={()=>setScr("home")} onRev={()=>setScr("practice")} onNew={newRandom}/>}
-      {scr==="practice"&&<PracticeLanding t={t} onBack={()=>setScr("home")} onQuiz={()=>setScr("quiz")} onQuickFire={()=>setScr("quickfire")}/>}
-      {scr==="quiz"&&<CountryQuiz t={t} onBack={()=>setScr("practice")}/>}
-      {scr==="quickfire"&&<QuickFire t={t} onBack={()=>setScr("practice")}/>}
-      {scr==="stats"&&<Stats t={t} onBack={()=>setScr("home")} p={st.p} s={st.s} b={st.b} sc={st.sc}/>}
+
+      {scr==="home"&&<Home t={t} streak={st.s} onNav={id=>go(id)}/>}
+
+      {scr==="daily"&&daily&&(daily.pg
+        ? <PostGame t={t} cells={daily.pg.cells} guesses={daily.pg.gl} grid={daily.pg.grid} mode="daily" onBack={()=>go("")} onRev={()=>go("practice")} onNew={newRandom}/>
+        : daily.grid && <GridGame t={t} grid={daily.grid} mode="daily" initial={daily.progress} onProgress={p=>setDaily(d=>d?{...d,progress:p}:d)} onDone={(c,gl,g)=>finish("daily",c,gl,g)} onBack={()=>go("")} onNewPuzzle={newRandom}/>)}
+
+      {scr==="random"&&random&&(random.pg
+        ? <PostGame t={t} cells={random.pg.cells} guesses={random.pg.gl} grid={random.pg.grid} mode="random" onBack={()=>go("")} onRev={()=>go("practice")} onNew={newRandom}/>
+        : random.grid && <GridGame t={t} grid={random.grid} mode="random" initial={random.progress} onProgress={p=>setRandom(r=>r?{...r,progress:p}:r)} onDone={(c,gl,g)=>finish("random",c,gl,g)} onBack={()=>go("")} onNewPuzzle={newRandom}/>)}
+
+      {scr==="practice"&&<PracticeLanding t={t} onBack={()=>go("")} onQuiz={()=>go("quiz")} onQuickFire={()=>go("quickfire")}/>}
+      {scr==="quiz"&&<CountryQuiz t={t} onBack={()=>go("practice")}/>}
+      {scr==="quickfire"&&<QuickFire t={t} onBack={()=>go("practice")}/>}
+      {scr==="stats"&&<Stats t={t} onBack={()=>go("")} p={st.p} s={st.s} b={st.b} sc={st.sc}/>}
     </div>);
 }

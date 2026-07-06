@@ -35,7 +35,7 @@ export default function PostGame({cells,guesses,grid,mode,onBack,onRev,onNew,t})
                 style={{width:"100%",minHeight:50,borderRadius:8,cursor:"pointer",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
                   border:cell?.ok?`2px solid ${t.okBd}`:`1.5px dashed ${t.bd}`,
                   background:cell?.ok?t.okBg:t.sf,padding:4,fontSize:11,fontWeight:700,color:cell?.ok?t.ok:t.txD,lineHeight:1.2,position:"relative"}}>
-                {cell?.ok?<span style={{display:"flex",alignItems:"center",gap:3}}><Flag name={cell.name} size={11}/><span>{cell.name}</span><span aria-hidden="true" style={{position:"absolute",top:2,right:3,fontSize:8}}>📍</span></span>:<span>{`${ans.length} answers`}</span>}
+                {cell?.ok?<span style={{display:"flex",alignItems:"center",gap:3}}><Flag name={cell.name} size={11}/><span>{cell.name}</span></span>:<span>{`${ans.length} answers`}</span>}
                 <span aria-hidden="true" style={{fontSize:7.5,color:t.txD,marginTop:1}}>{isE?"▲":"▼"}</span>
               </button>
               {isE&&(<div style={{marginTop:3,padding:7,background:t.sf2,borderRadius:6,fontSize:10.5,border:`1px solid ${t.bd}30`}}>

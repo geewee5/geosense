@@ -240,23 +240,27 @@ but no longer used in the UI.)
 
 ## Screens and navigation
 
-Navigation is managed by a single `scr` string state in `App.jsx`. Valid values:
+Navigation is driven by the **URL hash** via a tiny custom router in `App.jsx` (no
+routing library). Each tab is its own shareable page and browser Back/Forward work.
 
-| `scr` value   | Screen rendered      |
-|---------------|----------------------|
-| `"home"`      | Home                 |
-| `"grid"`      | GridGame             |
-| `"post"`      | PostGame             |
-| `"practice"`  | PracticeLanding      |
-| `"quiz"`      | CountryQuiz          |
-| `"quickfire"` | QuickFire            |
-| `"stats"`     | Stats                |
+| Hash          | `scr`         | Screen rendered                    |
+|---------------|---------------|------------------------------------|
+| `#/`          | `"home"`      | Home                               |
+| `#/daily`     | `"daily"`     | GridGame or PostGame (daily slot)  |
+| `#/random`    | `"random"`    | GridGame or PostGame (random slot) |
+| `#/practice`  | `"practice"`  | PracticeLanding                    |
+| `#/quiz`      | `"quiz"`      | CountryQuiz                        |
+| `#/quickfire` | `"quickfire"` | QuickFire                          |
+| `#/stats`     | `"stats"`     | Stats                              |
 
-There is no router library. Do not add one. The app is intentionally single-page with
-manual screen switching.
+Hash routing (not history/path routing) is deliberate — it works on GitHub Pages with
+no server config or 404 fallback. `go(route)` sets `window.location.hash`; a `hashchange`
+listener maps the hash to `scr` (and lazily starts a daily/random grid if needed).
 
-Daily grid state: `dd` boolean tracks whether today's daily has been played. If true,
-navigating to "daily" shows PostGame instead of starting a new game.
+Daily vs Random each has its **own persisted slot** (`{grid, progress, pg, dailyDate}`),
+so `#/daily` and `#/random` keep independent progress. Within a slot, GridGame renders
+while `pg` is null and PostGame renders once the grid is finished. A slot's `dailyDate`
+resets the daily when the calendar day changes.
 
 ---
 
@@ -298,10 +302,15 @@ Two keyframe animations are defined inline in GridGame:
 
 ## What to build next
 
-These features are planned but not yet implemented. Build them in this order:
+These features are planned. Build them in this order:
 
-1. **Persistence (localStorage)** — save daily completion (`geosense_v1_state`), streaks,
-   Quick Fire best streak, so refresh doesn't reset progress.
+1. ~~**Persistence (localStorage)**~~ — DONE. `engine/storage.js` saves state under
+   `geosense_v1_state`; `App.jsx` loads it on start and saves on every change. Persisted:
+   theme, current screen, stats, daily-done flag, current grid + mode, in-progress grid
+   answers (`progress` = `{cells,gl,log}`, reported up from GridGame via `onProgress`), and
+   the completed `pg`. A `dailyDate` stamp resets the daily when the calendar day changes.
+   Note: only ONE in-progress grid is stored at a time (daily and random share the slot);
+   Quick Fire / Country Quiz sessions are not persisted.
 2. **Post-game fact cards** — a one-line, data-derived geography fact per cell intersection.
 3. **Training Mode** — the "coming soon" mode: per-user (country, category) familiarity
    scores in localStorage, spaced-repetition intervals, grids targeting weak spots.
@@ -314,7 +323,8 @@ These features are planned but not yet implemented. Build them in this order:
 ## Things never to do
 
 - **Do not add a backend or API calls.** The game is intentionally offline-first.
-- **Do not add a router.** Navigation is a single `scr` state string.
+- **Keep routing hash-based** (no history/path router, no routing library). Path routing
+  breaks on GitHub Pages without a 404 fallback; the custom hash router avoids that.
 - **Do not add a state management library.** useState + prop passing is sufficient.
 - **Do not use Tailwind classes in components.** All styling is inline via theme object.
 - **Do not change the daily seed formula.** It must stay deterministic by date.
