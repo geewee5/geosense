@@ -1,7 +1,7 @@
 // ─── HOME ───
 export default function Home({onNav,streak,t}){
   return(
-    <div style={{padding:"32px 20px 20px",maxWidth:420,margin:"0 auto"}}>
+    <div className="screen" style={{padding:"32px 20px 20px",maxWidth:420,margin:"0 auto"}}>
       <div style={{marginBottom:28}}>
         <h1 style={{fontSize:28,fontWeight:700,color:t.tx,margin:0,letterSpacing:-.3}}>Know the world</h1>
         <p style={{color:t.txD,fontSize:13,margin:"5px 0 0"}}>How well do you know the world's countries?</p>

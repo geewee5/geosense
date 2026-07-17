@@ -91,3 +91,20 @@ input {
 *::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* ── Responsive: scale the puzzle and content up on wider (desktop) screens.
+   Mobile is untouched — these overrides only apply above the breakpoint. ── */
+@media (min-width: 720px) {
+  .screen { max-width: 560px !important; }
+  /* PostGame (results) can scroll, so a simple width bump is fine there. The live
+     puzzle (GridGame) is sized in JS to fit the viewport height — see GridGame.jsx. */
+  .pg-wrap { max-width: 600px !important; }
+  .pg-grid {
+    grid-template-columns: 96px repeat(3, 1fr) !important;
+    grid-template-rows: 72px repeat(3, auto) !important;
+    gap: 6px !important;
+  }
+  .pg-cell { min-height: 84px !important; }
+  .cattag .ct-emoji { font-size: 24px !important; }
+  .cattag .ct-label { font-size: 11px !important; max-width: 88px !important; }
+}

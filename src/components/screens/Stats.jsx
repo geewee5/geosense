@@ -7,7 +7,7 @@ export default function Stats({onBack,p,s,b,sc,t}){
   const nxt=lvl[lvl.indexOf(cur)+1];
   const pct=nxt?(sc-cur.m)/(nxt.m-cur.m):1;
   return(
-    <div style={{padding:"16px 20px",maxWidth:420,margin:"0 auto"}}>
+    <div className="screen" style={{padding:"16px 20px",maxWidth:420,margin:"0 auto"}}>
       <div style={{display:"flex",alignItems:"center",marginBottom:20}}>
         <button onClick={onBack} aria-label="Back to home" style={{background:t.sf2,border:"none",borderRadius:8,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:t.txM,fontSize:17}}><span aria-hidden="true">←</span></button>
         <h2 style={{fontSize:20,fontWeight:600,color:t.tx,margin:"0 0 0 12px"}}>Your Progress</h2>

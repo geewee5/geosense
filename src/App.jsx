@@ -75,11 +75,13 @@ export default function App(){
     <div style={{height:"100dvh",display:"flex",flexDirection:"column",overflow:"hidden",background:t.bg,color:t.tx,transition:"background .3s,color .3s",fontFamily:"var(--font-body)","--focus-ring":t.sec}}>
       {/* Shared header: stays put because the content below it scrolls, not the
           header itself (avoids iOS position:fixed drift). */}
-      <header style={{flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",paddingTop:"calc(env(safe-area-inset-top) + 10px)",background:t.bg,borderBottom:`1px solid ${t.bd}`,zIndex:10}}>
-        <button onClick={()=>go("")} aria-label="GeoSense — home" style={{background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"var(--font-display)",fontSize:22,fontWeight:700,letterSpacing:-.5,color:t.tx,lineHeight:1}}>
-          Geo<span style={{fontWeight:400,color:t.sec}}>Sense</span>
-        </button>
-        <ThemeToggle dk={dk} onToggle={()=>setDk(!dk)} t={t}/>
+      <header style={{flexShrink:0,paddingTop:"env(safe-area-inset-top)",background:t.bg,borderBottom:`1px solid ${t.bd}`,zIndex:10}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",maxWidth:600,margin:"0 auto"}}>
+          <button onClick={()=>go("")} aria-label="GeoSense — home" style={{background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"var(--font-display)",fontSize:22,fontWeight:700,letterSpacing:-.5,color:t.tx,lineHeight:1}}>
+            Geo<span style={{fontWeight:400,color:t.sec}}>Sense</span>
+          </button>
+          <ThemeToggle dk={dk} onToggle={()=>setDk(!dk)} t={t}/>
+        </div>
       </header>
       <main style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",minHeight:0}}>
 

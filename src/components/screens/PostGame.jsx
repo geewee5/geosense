@@ -11,7 +11,7 @@ export default function PostGame({cells,guesses,grid,mode,onBack,onRev,onNew,t})
   const emo=cells.map(c=>c?.ok?"🟩":"⬛").reduce((a,e,i)=>a+e+((i+1)%3===0&&i<8?"\n":""),"");
   const face=sc===9?"🌟":sc>=6?"🗺️":"📚";
   return(
-    <div style={{padding:"16px",maxWidth:420,margin:"0 auto"}}>
+    <div className="pg-wrap" style={{padding:"16px",maxWidth:420,margin:"0 auto"}}>
       <div style={{textAlign:"center",marginBottom:16}}>
         <div aria-hidden="true" style={{fontSize:40,marginBottom:2}}>{face}</div>
         <h2 style={{fontSize:24,fontWeight:600,color:t.tx,margin:0}}>{sc===9?"Flawless!":sc>=6?"Well played!":"Keep exploring!"}</h2>
@@ -20,7 +20,7 @@ export default function PostGame({cells,guesses,grid,mode,onBack,onRev,onNew,t})
           <span><strong style={{color:t.pri,fontFamily:"ui-monospace,monospace"}}>{12-guesses}</strong> guesses</span>
         </div>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"72px repeat(3,1fr)",gridTemplateRows:"58px repeat(3,auto)",gap:3}}>
+      <div className="pg-grid" style={{display:"grid",gridTemplateColumns:"72px repeat(3,1fr)",gridTemplateRows:"58px repeat(3,auto)",gap:3}}>
         <div/>
         {grid.cols.map((id,i)=><CatTag key={i} id={id} t={t} s/>)}
         {grid.rows.map((rc,r)=><div key={`row${r}`} style={{display:"contents"}}>
@@ -31,7 +31,7 @@ export default function PostGame({cells,guesses,grid,mode,onBack,onRev,onNew,t})
             const cellDesc=`${CATS[rc].l} and ${CATS[cc].l}`;
             const cellLabel=(cell?.ok?`${cell.name}, correct. ${cellDesc}.`:`${ans.length} possible answers. ${cellDesc}.`)+(isE?" Showing answers.":" Activate to show all answers.");
             return(<div key={idx}>
-              <button onClick={()=>setExp(isE?null:key)} aria-expanded={isE} aria-label={cellLabel}
+              <button onClick={()=>setExp(isE?null:key)} aria-expanded={isE} aria-label={cellLabel} className="pg-cell"
                 style={{width:"100%",minHeight:50,borderRadius:8,cursor:"pointer",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
                   border:cell?.ok?`2px solid ${t.okBd}`:`1.5px dashed ${t.bd}`,
                   background:cell?.ok?t.okBg:t.sf,padding:4,fontSize:11,fontWeight:700,color:cell?.ok?t.ok:t.txD,lineHeight:1.2,position:"relative"}}>

@@ -36,7 +36,7 @@ export default function CountryQuiz({onBack,t}){
   const trueCount=cats.filter(id=>correctSet.has(id)).length;
 
   return(
-    <div style={{padding:"16px",maxWidth:420,margin:"0 auto"}}>
+    <div className="screen" style={{padding:"16px",maxWidth:420,margin:"0 auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
         <button onClick={onBack} aria-label="Back to practice menu" style={{background:t.sf2,border:"none",borderRadius:8,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:t.txM,fontSize:17}}><span aria-hidden="true">←</span></button>
         <span style={{fontSize:14,fontWeight:700,color:t.honey}}><span aria-hidden="true">🎯 </span>Country Quiz</span>

@@ -56,12 +56,28 @@ export default function GridGame({onBack,onDone,grid,mode,onNewPuzzle,t,initial,
   const [log,setLog]=useState(initial?.log||[]);
   const [flash,setFlash]=useState(null);
   const [toast,setToast]=useState(null);
-  // On wide screens the picker becomes a right-side panel and the puzzle slides
-  // left; on narrow screens it stays a bottom sheet.
-  const [wide,setWide]=useState(()=>typeof window!=="undefined"&&window.innerWidth>=900);
-  useEffect(()=>{const on=()=>setWide(window.innerWidth>=900);window.addEventListener("resize",on);return()=>window.removeEventListener("resize",on);},[]);
+  // Track the viewport so the puzzle can adapt to desktop.
+  const [vp,setVp]=useState(()=>({w:typeof window!=="undefined"?window.innerWidth:400,h:typeof window!=="undefined"?window.innerHeight:800}));
+  useEffect(()=>{const on=()=>setVp({w:window.innerWidth,h:window.innerHeight});window.addEventListener("resize",on);return()=>window.removeEventListener("resize",on);},[]);
+  const wide=vp.w>=900;      // right-side picker panel + puzzle slides left
+  const desktop=vp.w>=720;   // scale the puzzle up
   const PANEL_W=420;
   const panelOpen=sel!==null&&wide;
+  // On desktop, size the grid to fit BOTH width and viewport height so all rows
+  // show without scrolling: square cells = min(width-fit, height-fit). On mobile,
+  // keep the original fluid layout untouched.
+  const gap=desktop?6:4, labelCol=desktop?90:72, headerRow=desktop?72:64;
+  let gridStyle, cellMinH, wrapMax;
+  if(desktop){
+    const cellW=(Math.min(560,vp.w-32)-20-labelCol-3*gap)/3;      // fit width (≤560)
+    const cellH=(vp.h-230-headerRow-3*gap)/3;                     // fit height (~230px chrome)
+    const size=Math.round(Math.max(60,Math.min(cellW,cellH)));
+    gridStyle={display:"grid",gridTemplateColumns:`${labelCol}px repeat(3,${size}px)`,gridTemplateRows:`${headerRow}px repeat(3,${size}px)`,gap,justifyContent:"center"};
+    cellMinH=0; wrapMax=labelCol+3*size+2*gap+20;
+  }else{
+    gridStyle={display:"grid",gridTemplateColumns:"72px repeat(3,1fr)",gridTemplateRows:"64px repeat(3,1fr)",gap:4};
+    cellMinH=64; wrapMax=420;
+  }
   const sc=cells.filter(c=>c?.ok).length;
   const done=sc===9||gl===0;
   useEffect(()=>{if(done)setTimeout(()=>onDone(cells,gl,grid),900);},[done]);
@@ -97,7 +113,7 @@ export default function GridGame({onBack,onDone,grid,mode,onNewPuzzle,t,initial,
 
   return(
     <div style={{paddingRight:panelOpen?PANEL_W:0,transition:"padding-right .25s ease"}}>
-    <div style={{padding:"14px 10px",maxWidth:420,margin:"0 auto",paddingBottom:(sel!==null&&!wide)?300:14}}>
+    <div style={{padding:"14px 10px",maxWidth:wrapMax,margin:"0 auto",paddingBottom:(sel!==null&&!wide)?300:14}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
         <button onClick={onBack} aria-label="Back to home" style={{background:t.sf2,border:"none",borderRadius:8,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:t.txM,fontSize:17}}><span aria-hidden="true">←</span></button>
         <div style={{textAlign:"center"}}>
@@ -109,7 +125,7 @@ export default function GridGame({onBack,onDone,grid,mode,onNewPuzzle,t,initial,
           <div aria-hidden="true" style={{fontSize:7.5,color:t.txD,textTransform:"uppercase",letterSpacing:1}}>left</div>
         </div>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"72px repeat(3,1fr)",gridTemplateRows:"64px repeat(3,1fr)",gap:4}}>
+      <div style={gridStyle}>
         <div role="status" aria-label={`Score ${sc} of 9`} style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
           <div aria-hidden="true" style={{fontFamily:"var(--font-mono)",fontSize:22,fontWeight:800,color:t.pri,lineHeight:1}}>{sc}</div>
           <div aria-hidden="true" style={{fontSize:7.5,color:t.txD,textTransform:"uppercase",letterSpacing:1}}>score</div>
@@ -129,8 +145,8 @@ export default function GridGame({onBack,onDone,grid,mode,onNewPuzzle,t,initial,
             return(<button key={idx} onClick={()=>{if(!isOk&&!done)setSel(sel===idx?null:idx);}}
               aria-label={cellLabel} aria-pressed={isS} disabled={isOk||done}
               style={{background:bg,border:`${bw} ${bs} ${bd}`,borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",gap:4,
-                padding:3,cursor:isOk||done?"default":"pointer",minHeight:64,transition:"all .12s",position:"relative",
-                color:col,fontSize:11,fontWeight:isOk?700:400,textAlign:"center",lineHeight:1.15,wordBreak:"break-word",
+                padding:3,cursor:isOk||done?"default":"pointer",minHeight:cellMinH,transition:"all .12s",position:"relative",
+                color:col,fontSize:desktop?13:11,fontWeight:isOk?700:400,textAlign:"center",lineHeight:1.15,wordBreak:"break-word",
                 animation:isF?"shake .35s ease":"none"}}>
               {isOk?(<><Flag name={cell.name} size={12}/><span>{cell.name}</span></>):isF?(<span style={{fontSize:11,fontWeight:600,lineHeight:1.15}}>{flash.name}</span>):(<span aria-hidden="true" style={{fontSize:18,opacity:.3}}>+</span>)}
             </button>);})}

@@ -3,7 +3,7 @@ import { CAT_KEYS } from "../../data/categories";
 // ─── PRACTICE LANDING ───
 export default function PracticeLanding({onBack,onQuiz,onQuickFire,t}){
   return(
-    <div style={{padding:"28px 20px",maxWidth:420,margin:"0 auto"}}>
+    <div className="screen" style={{padding:"28px 20px",maxWidth:420,margin:"0 auto"}}>
       <div style={{display:"flex",alignItems:"center",marginBottom:24}}>
         <button onClick={onBack} aria-label="Back to home" style={{background:t.sf2,border:"none",borderRadius:8,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:t.txM,fontSize:17}}><span aria-hidden="true">←</span></button>
         <h2 style={{fontSize:22,fontWeight:600,color:t.tx,margin:"0 0 0 12px"}}>Practice</h2>
